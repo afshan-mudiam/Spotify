@@ -65,7 +65,7 @@ const Categories = () => {
                 className="w-full h-32 object-cover rounded mb-3"
               />
               <h3 className="text-white font-semibold truncate">{cat.name}</h3>
-              <p className="text-gray-400 text-sm truncate">{cat.id}</p>
+              <p className="text-gray-400 text-sm truncate">{cat.name}</p>
             </div>
           ))
         ) : (

@@ -39,7 +39,7 @@ const Navbar = ({ onSearch }) => {
     <nav className="bg-gray-900 text-white p-4 flex justify-between items-center fixed top-0 left-0 w-full z-50">
       <div className="flex items-center">
         <img
-          src="https://www.citypng.com/public/uploads/preview/spotify-green-neon-logo-sign-hd-png-701751694772583peurjewwgp.png?v=2025081413"
+          src="https://img.freepik.com/premium-photo/spotify-logo_996353-1684.jpg?semt=ais_incoming&w=740&q=80"
           alt="Spotify Logo"
           className="h-8 sm:h-10 md:h-10 lg:h-14 xl:h-10 w-10 object-contain"
           style={{ maxWidth: '40px' }}

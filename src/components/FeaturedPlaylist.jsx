@@ -53,7 +53,7 @@ const FeaturedPlaylist = ({ search }) => {
 
   return (
     // Updated margin top to account for navbar height and mobile sidebar
-    <div className="grid grid-cols-2 mt-32 md:mt-20 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:ml-64 px-4">
+    <div className="grid grid-cols-2 mt-32 mb-20 md:mt-20 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:ml-64 px-4">
       {filtered.map((playlist) => (
         <div
           key={playlist.id}

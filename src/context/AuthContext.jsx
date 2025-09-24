@@ -1,4 +1,5 @@
 import  { createContext, useState, useEffect } from "react";
+import cookie from "js-cookie";
 
 export const AuthContext = createContext();
 
@@ -8,25 +9,26 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      const token = localStorage.getItem("jwt_token");
+      const token = cookie.get("jwt_token");
       const savedUser = localStorage.getItem("username");
       if (token && savedUser) {
         setUser(savedUser);
       }
+    } catch (err) {
+      // handle error if needed
     } finally {
-      setInitializing(false); 
+      setInitializing(false);
     }
   }, []);
 
   const login = (username) => {
     setUser(username);
     localStorage.setItem("username", username);
-    
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("jwt_token");
+    cookie.remove("jwt_token");
     localStorage.removeItem("username");
     localStorage.removeItem("hasSeenWelcome");
   };

@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import cookie from "js-cookie";
+import { PlayerContext } from "../context/PlayerContext";
+import { LikedContext } from "../context/LikedContext";
 import { useParams, useNavigate } from "react-router-dom";
 import LoadingScreen from "../pages/LoadingScreen";
 
 const ItemDetails = () => {
   const { id } = useParams();
+  const { playTrack, currentTrack, isPlaying, pause } = useContext(PlayerContext);
+  const { likedTracks, addLikedTrack, removeLikedTrack } = useContext(LikedContext);
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [tracks, setTracks] = useState([]);
@@ -88,82 +93,93 @@ const ItemDetails = () => {
     };
 
     const handleAPIData = async () => {
-      const token = localStorage.getItem("jwt_token");
+      const token = cookie.get("jwt_token");
       if (!token) {
-        throw new Error("No authentication token found");
+        setError("No authentication token found. Please login again.");
+        navigate("/login");
+        return;
       }
 
-      const playlistRes = await fetch(
-        `https://apis2.ccbp.in/spotify-clone/playlists-details/${id}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
+      try {
+        const playlistRes = await fetch(
+          `https://apis2.ccbp.in/spotify-clone/playlists-details/${id}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
           }
+        );
+
+        if (!playlistRes.ok) {
+          throw new Error(`Failed to fetch playlist details: ${playlistRes.status} ${playlistRes.statusText}`);
         }
-      );
 
-      if (!playlistRes.ok) {
-        throw new Error(`Failed to fetch playlist details: ${playlistRes.status} ${playlistRes.statusText}`);
+        const playlistData = await playlistRes.json();
+        console.log("API Response:", playlistData);
+
+        if (!playlistData) {
+          console.error("No data received from API", playlistData);
+          setError("No playlist data found. Please try again later.");
+          setItem(null);
+          setTracks([]);
+          return;
+        }
+
+        // Parse playlist and tracks
+        const playlist = playlistData.playlist || playlistData;
+        if (!playlist) {
+          console.error("No playlist object in API response", playlistData);
+          setError("No playlist found in response.");
+          setItem(null);
+          setTracks([]);
+          return;
+        }
+
+        setItem({
+          name: playlist.name || "Unknown Playlist",
+          images: playlist.images || [],
+          description: playlist.description || "No description available",
+        });
+
+        // Handle tracks data - check multiple possible structures
+        let tracksData = [];
+        if (playlistData.tracks?.items) {
+          tracksData = playlistData.tracks.items.map(item => item.track || item).filter(track => track && track.id);
+        } else if (playlistData.tracks && Array.isArray(playlistData.tracks)) {
+          tracksData = playlistData.tracks.filter(track => track && track.id);
+        } else if (playlist.tracks?.items) {
+          tracksData = playlist.tracks.items.map(item => item.track || item).filter(track => track && track.id);
+        } else if (playlist.tracks && Array.isArray(playlist.tracks)) {
+          tracksData = playlist.tracks.filter(track => track && track.id);
+        }
+
+        if (!tracksData.length) {
+          console.error("No tracks found in playlist", playlist);
+          setError("No tracks found for this playlist.");
+          setTracks([]);
+          return;
+        }
+
+        const processedTracks = tracksData.map(track => ({
+          id: track.id,
+          name: track.name || "Unknown Track",
+          album: {
+            name: track.album?.name || "Unknown Album",
+            images: track.album?.images || [],
+          },
+          artists: Array.isArray(track.artists) ? track.artists : [{ name: "Unknown Artist" }],
+          duration_ms: track.duration_ms || 0,
+          preview_url: track.preview_url || "",
+        }));
+
+        setTracks(processedTracks);
+        console.log("Processed tracks:", processedTracks);
+      } catch (err) {
+        setError(err.message || "Failed to fetch playlist details.");
       }
-
-      const playlistData = await playlistRes.json();
-      console.log("API Response:", playlistData);
-
-      if (!playlistData) {
-        throw new Error("No data received from API");
-      }
-
-      // Handle different possible API response structures
-      const playlist = playlistData.playlist || playlistData;
-      
-      if (!playlist) {
-        throw new Error("No playlist data found in response");
-      }
-
-      setItem({
-        name: playlist.name || "Unknown Playlist",
-        images: playlist.images || [],
-        description: playlist.description || "No description available",
-      });
-
-      // Handle tracks data - check multiple possible structures
-      let tracksData = [];
-      
-      if (playlistData.tracks?.items) {
-        // Spotify-style structure
-        tracksData = playlistData.tracks.items
-          .map(item => item.track || item)
-          .filter(track => track && track.id);
-      } else if (playlistData.tracks && Array.isArray(playlistData.tracks)) {
-        // Direct array structure
-        tracksData = playlistData.tracks.filter(track => track && track.id);
-      } else if (playlist.tracks?.items) {
-        // Nested in playlist object
-        tracksData = playlist.tracks.items
-          .map(item => item.track || item)
-          .filter(track => track && track.id);
-      } else if (playlist.tracks && Array.isArray(playlist.tracks)) {
-        // Direct array in playlist
-        tracksData = playlist.tracks.filter(track => track && track.id);
-      }
-
-      const processedTracks = tracksData.map(track => ({
-        id: track.id,
-        name: track.name || "Unknown Track",
-        album: {
-          name: track.album?.name || "Unknown Album",
-          images: track.album?.images || [],
-        },
-        artists: Array.isArray(track.artists) ? track.artists : [{ name: "Unknown Artist" }],
-        duration_ms: track.duration_ms || 0,
-        preview_url: track.preview_url || "",
-      }));
-
-      setTracks(processedTracks);
-      console.log("Processed tracks:", processedTracks);
-    };
+    }
 
     const setNotFound = () => {
       setItem({
@@ -223,14 +239,14 @@ const ItemDetails = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm p-2 sm:p-6">
-      <div className="bg-[#101820] rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-full sm:max-w-4xl lg:max-w-6xl relative flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
+    <div className="w-full">
+      <div className="bg-[#101820] xl:mt-20 rounded-xl xl:ml-70 xl:mt-10 sm:rounded-2xl shadow-2xl w-full max-w-full sm:max-w-4xl lg:max-w-6xl relative flex flex-col min-h-[80vh] mx-auto my-8 p-4 overflow-y-auto">
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-2 sm:top-4 right-2 sm:right-4 text-white bg-green-500 hover:bg-green-400 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-2xl shadow-md transition z-10"
+          className="text-white bg-green-500 hover:bg-green-400 rounded-full w-8 h-8 flex items-center justify-center text-lg shadow-md transition mb-4 self-end"
         >
-          ×
+          X
         </button>
 
         {/* Error Display */}
@@ -321,53 +337,73 @@ const ItemDetails = () => {
                       </span>
                     </div>
                     
-                    {/* Audio Player - Desktop Right Side */}
-                    <div className="flex-shrink-0 w-80 lg:w-96 flex flex-col items-center">
-                      {track.preview_url ? (
-                        <div className="flex flex-col items-center w-full">
-                          <audio
-                            controls
-                            src={track.preview_url}
-                            className="w-full"
-                            preload="none"
-                            onPlay={(e) => handleAudioPlay(e.target)}
-                            onPause={handleAudioPause}
-                            onEnded={handleAudioEnded}
-                          />
-                          <span className="text-gray-400 text-xs mt-1">
-                            Preview (30s)
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 text-xs">
-                          No preview available
-                        </span>
-                      )}
+                    {/* Like and Play/Pause Buttons */}
+                    <div className="flex items-center space-x-4">
+                      <button
+                        className={`text-2xl transition-colors focus:outline-none ${likedTracks.find(t => t.id === track.id) ? "text-red-500" : "text-gray-400"}`}
+                        title={likedTracks.find(t => t.id === track.id) ? "Unlike" : "Like"}
+                        onClick={() => {
+                          if (likedTracks.find(t => t.id === track.id)) {
+                            removeLikedTrack(track.id);
+                          } else {
+                            addLikedTrack(track);
+                          }
+                        }}
+                      >
+                        ♥
+                      </button>
+                      <button
+                        className="text-2xl text-white bg-green-600 hover:bg-green-500 rounded-full p-2 focus:outline-none"
+                        title={currentTrack && currentTrack.id === track.id && isPlaying ? "Pause" : "Play"}
+                        onClick={() => {
+                          if (currentTrack && currentTrack.id === track.id && isPlaying) {
+                            pause();
+                          } else {
+                            playTrack(track, tracks);
+                          }
+                        }}
+                      >
+                        {currentTrack && currentTrack.id === track.id && isPlaying ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        )}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Audio Player - Full Width on Mobile Only */}
-                  <div className="w-full flex flex-col items-center mt-2 sm:hidden">
-                    {track.preview_url ? (
-                      <div className="flex flex-col items-center w-full">
-                        <audio
-                          controls
-                          src={track.preview_url}
-                          className="w-full max-w-sm"
-                          preload="none"
-                          onPlay={(e) => handleAudioPlay(e.target)}
-                          onPause={handleAudioPause}
-                          onEnded={handleAudioEnded}
-                        />
-                        <span className="text-gray-400 text-xs mt-1">
-                          Preview (30s)
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500 text-xs">
-                        No preview available
-                      </span>
-                    )}
+                  {/* Like and Play/Pause Buttons - Mobile */}
+                  <div className="w-full flex items-center justify-end mt-2 sm:hidden space-x-4">
+                    <button
+                      className={`text-2xl transition-colors focus:outline-none ${likedTracks.find(t => t.id === track.id) ? "text-red-500" : "text-gray-400"}`}
+                      title={likedTracks.find(t => t.id === track.id) ? "Unlike" : "Like"}
+                      onClick={() => {
+                        if (likedTracks.find(t => t.id === track.id)) {
+                          removeLikedTrack(track.id);
+                        } else {
+                          addLikedTrack(track);
+                        }
+                      }}
+                    >
+                      ♥
+                    </button>
+                    <button
+                      className="text-2xl text-white bg-green-600 hover:bg-green-500 rounded-full p-2 focus:outline-none"
+                      title={currentTrack && currentTrack.id === track.id && isPlaying ? "Pause" : "Play"}
+                      onClick={() => {
+                        if (currentTrack && currentTrack.id === track.id && isPlaying) {
+                          pause();
+                        } else {
+                          playTrack(track, tracks);
+                        }
+                      }}
+                    >
+                      {currentTrack && currentTrack.id === track.id && isPlaying ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      )}
+                    </button>
                   </div>
                 </li>
               ))}

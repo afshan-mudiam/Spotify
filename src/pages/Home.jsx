@@ -41,7 +41,7 @@ const Home = () => {
 
         <div className="p-6 pt-24 md:pt-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white mt-3 md:ml-64 md:mt-10">
+            <h2 className="text-3xl font-bold text-white mt-3 md:ml-64 md:mt-10">
               Welcome to Spotify Remix
             </h2>
           </div>

@@ -55,7 +55,7 @@ const Categories = () => {
   return (
     <div>
       <Navbar onSearch={handleSearch} />
-      <div className="grid grid-cols-2 mt-32 md:mt-20 md:grid-cols-4 lg:grid-cols-5 gap-4 md:ml-64 px-4">
+      <div className="grid grid-cols-2 mt-32 mb-20 md:mt-20 md:grid-cols-4 lg:grid-cols-5 gap-4 md:ml-64 px-4">
         {filteredCategories.length > 0 ? (
           filteredCategories.map((cat) => (
             <div key={cat.id} className="bg-gray-800 p-4 rounded hover:bg-gray-700 transition">

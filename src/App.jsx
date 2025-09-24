@@ -10,9 +10,14 @@ import Navbar from "./components/Navbar";
 import Categories from "./components/Categories";
 import NewReleased from "./components/NewReleased";
 import ItemDetails from "./components/ItemDetails"; 
+import LikedProvider from "./context/LikedContext";
+import Liked from "./components/Liked";
+import PlayerProvider from "./context/PlayerContext";
+import Player from "./components/Player";
 
 const AppContent = () => {
   const { user, initializing } = useContext(AuthContext);
+  const [search, setSearch] = React.useState("");
 
   if (initializing) {
     return (
@@ -32,33 +37,36 @@ const AppContent = () => {
   }
 
   return (
-    <div className="flex bg-black min-h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <div className="p-6">
-          <Routes>
-            <Route path="/home" element={<Home />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/new-releases" element={<NewReleased />} />
-
-            {/* ✅ Details page */}
-            <Route path="/details/:id" element={<ItemDetails />} />
-
-            {/* Default redirect */}
-            <Route path="*" element={<Navigate to="/home" replace />} />
-          </Routes>
+    <PlayerProvider>
+      <div className="flex bg-black min-h-screen">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar onSearch={setSearch} />
+          <div className="p-6">
+            <Routes>
+              <Route path="/home" element={<Home search={search} />} />
+              <Route path="/categories" element={<Categories search={search} />} />
+              <Route path="/new-releases" element={<NewReleased search={search} />} />
+              <Route path="/liked" element={<Liked search={search} />} />
+              <Route path="/details/:id" element={<ItemDetails search={search} />} />
+              {/* Default redirect */}
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+          </div>
         </div>
+        <Player />
       </div>
-    </div>
+    </PlayerProvider>
   );
 };
 
 const App = () => (
   <AuthProvider>
-    <Router>
-      <AppContent />
-    </Router>
+    <LikedProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </LikedProvider>
   </AuthProvider>
 );
 

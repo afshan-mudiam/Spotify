@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import cookie from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
@@ -30,9 +31,9 @@ const Login = () => {
       const response = await fetch(loginApiUrl, options);
       const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem("jwt_token", data.jwt_token);
-        login(username); 
+      if (response.ok && data.jwt_token) {
+        cookie.set("jwt_token", data.jwt_token , { expires: 30 });
+        login(username);
         navigate("/home");
       } else {
         setError(data.error_msg || "Login failed. Try again.");

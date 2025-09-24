@@ -21,6 +21,9 @@ const Sidebar = () => {
               <button onClick={() => navigate("/categories")} className="w-full py-2 px-3 rounded bg-blue-500 text-white hover:bg-blue-600 mb-2">Categories</button>
               <button onClick={() => navigate("/new-releases")} className="w-full py-2 px-3 rounded bg-purple-500 text-white hover:bg-purple-600">New Release</button>
             </li>
+            <li>
+              <button onClick={() => navigate("/liked")} className="w-full py-2 px-3 rounded bg-pink-500 text-white hover:bg-pink-600">Liked</button>
+            </li>
           </ul>
         </nav>
         <div className="mt-6">
@@ -40,7 +43,9 @@ const Sidebar = () => {
           <li>
             <button onClick={() => navigate("/new-releases")} className="px-3 py-2 rounded bg-purple-500 text-white text-xs m-2">New Release</button>
           </li>
-          
+          <li>
+            <button onClick={() => navigate("/liked")} className="px-3 py-2 rounded bg-pink-500 text-white text-xs m-2">Liked</button>
+          </li>
           <li>
             <button onClick={logout} className="px-3 py-2 rounded bg-red-500 text-white text-xs m-2">Logout</button>
           </li>
